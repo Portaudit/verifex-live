@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verifex</title>
+<meta name="description" content="Verifex is a small Solana devnet program that checks one on-chain fact about an agent and issues a seven-day credential through Referee. Unaudited.">
+<meta property="og:title" content="Verifex">
+<meta property="og:description" content="A small Solana devnet program that issues credentials for Referee. Devnet only, unaudited.">
+<link rel="icon" type="image/svg+xml" href="assets/vx.svg">
+<style>
+:root{--bg:#070b14;--panel:#0d1524;--line:#1e2a44;--text:#e6edf7;--muted:#93a4bd;--green:#34d399}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.65;padding:40px 24px 64px}
+main{max-width:880px;margin:0 auto}
+a{color:var(--green)}
+code{overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:#0a1220;border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+header{display:flex;gap:18px;align-items:center;margin-bottom:18px}
+header img{width:64px;height:64px;border-radius:14px;flex:none}
+h1{font-size:38px;line-height:1.1}
+.lead{font-size:19px;margin:6px 0 22px}
+.banner{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:12px 16px;color:var(--muted);font-size:14px;margin-bottom:34px}
+h2{font-size:22px;margin:42px 0 14px}
+h3{font-size:17px;margin-bottom:6px}
+p{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card p{color:var(--muted);font-size:15px;margin-bottom:8px}
+.card p:last-child{margin-bottom:0}
+ul{margin:0 0 14px 22px}
+li{margin-bottom:8px}
+.ids{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;font-size:14px}
+.ids span{color:var(--muted)}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:top}
+tr:first-child td{border-top:none}
+td:last-child{white-space:nowrap;text-align:right}
+.sig{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.card{min-width:0}.te>div{min-width:0}.te{display:flex;gap:16px;align-items:flex-start}
+.te img{width:56px;height:56px;border-radius:12px;flex:none}
+.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 10px;margin-left:8px;vertical-align:middle}
+.muted{color:var(--muted)}
+footer{margin-top:48px;color:var(--muted);font-size:13px;line-height:1.8}
+@media(max-width:700px){.cards{grid-template-columns:1fr}.ids{grid-template-columns:1fr}.te{flex-direction:column}.cards>.card{min-width:0}h1{font-size:32px}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="assets/vx.svg" alt="Verifex mark">
+    <h1>Verifex</h1>
+  </header>
+  <p class="lead">Verifex is a small Solana program that checks one on-chain fact about an agent and, if the check passes, issues a seven-day credential through Referee, so a DvP trade can only settle for parties the chain has vouched for.</p>
+  <div class="banner">Devnet only. Unaudited. Independent project, not affiliated with or endorsed by the Solana Foundation or J.P. Morgan. Every row below carries a signature you can check yourself.</div>
+
+  <h2>What it checks</h2>
+  <p>Each Verifex instruction runs one check, then calls Referee's <code>issue_credential</code>, signing as Verifex's own program-derived address. Today there are two instructions, so two checks.</p>
+  <div class="cards">
+    <div class="card">
+      <h3><code>verify_and_issue</code></h3>
+      <p>The agent's program must have no upgrade authority, so its code can no longer be changed.</p>
+      <p>Otherwise it refuses with <code>AgentNotImmutable</code> (6002).</p>
+    </div>
+    <div class="card">
+      <h3><code>verify_outcome_and_issue</code> <span class="muted">(&ldquo;Verifex Core&rdquo;)</span></h3>
+      <p>A commitment on TrustRail Core must be <code>Passed</code> and verified, and its executor must be the credential's subject.</p>
+      <p>Otherwise it refuses: <code>BadCommitment</code> (6003), <code>CommitmentNotPassed</code> (6004) or <code>SubjectNotExecutor</code> (6005).</p>
+    </div>
+  </div>
+
+  <h2>Why it exists</h2>
+  <p>DvP's <code>CreateDvp</code> needs only the payer to sign. The two parties and the settlement authority do not, so something has to decide who may settle. On devnet, that is <a href="https://thereferee.xyz" target="_blank" rel="noopener noreferrer">Referee</a>: its program-derived address is the settlement authority, and its settle step needs a valid credential for both parties. Verifex is the program that issues those credentials. If a credential is missing or expired, the trade never settles, and the parties can walk away through DvP's own Reject or Reclaim.</p>
+  <div class="card">
+    <div class="ids">
+      <span>Verifex</span><a href="https://explorer.solana.com/address/4GTqnRnN4ZDTzHf2EeqQW98RhDAtCkwG7vTgaPapR4Qs?cluster=devnet" target="_blank" rel="noopener noreferrer"><code>4GTqnRnN4ZDTzHf2EeqQW98RhDAtCkwG7vTgaPapR4Qs</code></a>
+      <span>Referee</span><a href="https://explorer.solana.com/address/EeviRiwTbsLcnYCkagwppFD9aRmN6fVeax9WN3tuTZEe?cluster=devnet" target="_blank" rel="noopener noreferrer"><code>EeviRiwTbsLcnYCkagwppFD9aRmN6fVeax9WN3tuTZEe</code></a>
+      <span>Verifex issuer PDA</span><a href="https://explorer.solana.com/address/72PiHwHvMASwKLJoc76VkheqLyxaUDeRV69DM9graiGz?cluster=devnet" target="_blank" rel="noopener noreferrer"><code>72PiHwHvMASwKLJoc76VkheqLyxaUDeRV69DM9graiGz</code></a>
+      <span>DvP (unmodified)</span><a href="https://explorer.solana.com/address/dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq?cluster=devnet" target="_blank" rel="noopener noreferrer"><code>dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq</code></a>
+    </div>
+  </div>
+
+  <h2>Receipts: Verifex issues the credentials</h2>
+  <p class="muted">11 transactions on Solana devnet. Each signature opens in Solana Explorer.</p>
+  <div class="wrap"><table>
+<tr><td>Verifex program deployed (96,328 bytes)</td><td><a class="sig" href="https://explorer.solana.com/tx/4M81UFX89uPW1bc5zW1hRvq4ueBJwEqkAKDZ6euG5So6jbj7MCtLTT7VU4UWY7SV4yEvGz6buUCbMmPqW41Ps27R?cluster=devnet" target="_blank" rel="noopener noreferrer" title="4M81UFX89uPW1bc5zW1hRvq4ueBJwEqkAKDZ6euG5So6jbj7MCtLTT7VU4UWY7SV4yEvGz6buUCbMmPqW41Ps27R">4M81UFX89uPW…</a></td></tr>
+<tr><td>Fifth in-place upgrade adds <code>set_issuer</code> (233,056 bytes, sha256 <code>0ca7e752be598b4ff3f38f6ad93f5fe7c4d7436f9c93a281e3dcbb38708f1a5b</code>)</td><td><a class="sig" href="https://explorer.solana.com/tx/2Py1tTyR3mUwtzoZpxyCT3pEVC4y69mSCEHgs5PC5KrzUA4ZzdakSWsVf8YJLi1vkSnzjT1dyLSwMs3QFxA4d1fv?cluster=devnet" target="_blank" rel="noopener noreferrer" title="2Py1tTyR3mUwtzoZpxyCT3pEVC4y69mSCEHgs5PC5KrzUA4ZzdakSWsVf8YJLi1vkSnzjT1dyLSwMs3QFxA4d1fv">2Py1tTyR3mUw…</a></td></tr>
+<tr><td>Referee&#x27;s issuer set to the Verifex PDA</td><td><a class="sig" href="https://explorer.solana.com/tx/3YWaV5rUSKnytE6X38ZbVqjdF7NgqyJxkuMfjW8zseUo8RyNcEqB3htprFfWYqxMLSMxPxQNAmynbisFf8SZstjn?cluster=devnet" target="_blank" rel="noopener noreferrer" title="3YWaV5rUSKnytE6X38ZbVqjdF7NgqyJxkuMfjW8zseUo8RyNcEqB3htprFfWYqxMLSMxPxQNAmynbisFf8SZstjn">3YWaV5rUSKny…</a></td></tr>
+<tr><td>Agent B presents the Token-2022 program (upgradeable): Verifex refuses, <code>AgentNotImmutable</code> (6002)</td><td><a class="sig" href="https://explorer.solana.com/tx/5KCURHKamfaw6XK71XF2WnbQSkjsUbbf51DFgwMewcPBKJDCm6MmaHSQBATPBRv6hiJqcFzMma7DaDLWfhXUDWtF?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5KCURHKamfaw6XK71XF2WnbQSkjsUbbf51DFgwMewcPBKJDCm6MmaHSQBATPBRv6hiJqcFzMma7DaDLWfhXUDWtF">5KCURHKamfaw…</a></td></tr>
+<tr><td>Agent A presents the classic Token program (immutable): Verifex issues party C&#x27;s credential</td><td><a class="sig" href="https://explorer.solana.com/tx/5TgLoDP6d5AFRoJAMTUvQhBaduM8UV48fWF2cEX8EKhgqugv1F82gAjapHQ8xWotTpf4s4M7oH9os7BfxerwbFzN?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5TgLoDP6d5AFRoJAMTUvQhBaduM8UV48fWF2cEX8EKhgqugv1F82gAjapHQ8xWotTpf4s4M7oH9os7BfxerwbFzN">5TgLoDP6d5AF…</a></td></tr>
+<tr><td>DvP trade 3001 between C and D: create</td><td><a class="sig" href="https://explorer.solana.com/tx/5YUZRrJmFxF4fd6RHPwTGWkBwQiNA4tbJmiqpYhyzpoyTZ74xrkzAHRLoqTikhDD2VNdUMP9RLTjvMerJpAUkh5s?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5YUZRrJmFxF4fd6RHPwTGWkBwQiNA4tbJmiqpYhyzpoyTZ74xrkzAHRLoqTikhDD2VNdUMP9RLTjvMerJpAUkh5s">5YUZRrJmFxF4…</a></td></tr>
+<tr><td>Trade 3001: fund</td><td><a class="sig" href="https://explorer.solana.com/tx/5v9JzRV6bUNgqCQYbmGhn15rCtENjo5Nu6diKgKY5ckoxRqtFpc79RRteKHryxXucvKGV9oTVLPPbvvQaS5g3FmH?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5v9JzRV6bUNgqCQYbmGhn15rCtENjo5Nu6diKgKY5ckoxRqtFpc79RRteKHryxXucvKGV9oTVLPPbvvQaS5g3FmH">5v9JzRV6bUNg…</a></td></tr>
+<tr><td>Trade 3001: register</td><td><a class="sig" href="https://explorer.solana.com/tx/2MgTjEeubwGcFXFwKiJhUJN8HD4c8b9z4ti4RF5kP3JJCME7iLTnnnayk3cWMDnABgqXV63WF4rhixVgKz3CERiX?cluster=devnet" target="_blank" rel="noopener noreferrer" title="2MgTjEeubwGcFXFwKiJhUJN8HD4c8b9z4ti4RF5kP3JJCME7iLTnnnayk3cWMDnABgqXV63WF4rhixVgKz3CERiX">2MgTjEeubwGc…</a></td></tr>
+<tr><td>Settle while D has no credential: refused, <code>AccountNotInitialized</code> (3012)</td><td><a class="sig" href="https://explorer.solana.com/tx/5EJTsD5kN7Za5FbNBFh1SHgj75jSdnhPk7iAi94KSWA3TRcfqu4KASAGdM47EjWKSQAGbQqa2pUeBspcjDYwNa71?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5EJTsD5kN7Za5FbNBFh1SHgj75jSdnhPk7iAi94KSWA3TRcfqu4KASAGdM47EjWKSQAGbQqa2pUeBspcjDYwNa71">5EJTsD5kN7Za…</a></td></tr>
+<tr><td>D presents the immutable Token program: Verifex issues D&#x27;s credential</td><td><a class="sig" href="https://explorer.solana.com/tx/4yKndKZkXWR6FjAjWjkRpiMKjtE8gA8zJPziWzhf4oxR6vyriAzbyUxhiFXLbc4dvvSszY5RLQDJsrhiYTJKDkwb?cluster=devnet" target="_blank" rel="noopener noreferrer" title="4yKndKZkXWR6FjAjWjkRpiMKjtE8gA8zJPziWzhf4oxR6vyriAzbyUxhiFXLbc4dvvSszY5RLQDJsrhiYTJKDkwb">4yKndKZkXWR6…</a></td></tr>
+<tr><td>Settle with two Verifex-issued credentials, rent returned (trade 3001)</td><td><a class="sig" href="https://explorer.solana.com/tx/3vHKabVU8sB3oZuaEuC9zGMVh8f9Gy6xZ3E62SbWQ8Bk3UyJqtU1sbUFyQyRAFuxa8Vv2abz8LrtN71yzi1J2rPm?cluster=devnet" target="_blank" rel="noopener noreferrer" title="3vHKabVU8sB3oZuaEuC9zGMVh8f9Gy6xZ3E62SbWQ8Bk3UyJqtU1sbUFyQyRAFuxa8Vv2abz8LrtN71yzi1J2rPm">3vHKabVU8sB3…</a></td></tr>
+  </table></div>
+
+  <h2>Receipts: an outcome gates the credential</h2>
+  <p class="muted">14 transactions on Solana devnet, using TrustRail Core.</p>
+  <div class="wrap"><table>
+<tr><td>TrustRail Core deployed (268,368 bytes)</td><td><a class="sig" href="https://explorer.solana.com/tx/LVGzKA4TxJ2EjSYok8saCn8HFa5YVtX6VBPfMMLHefqvDFgjcL9nWB24vsbLmqaSLE4LZ1P6s3erkW99wpTGFFB?cluster=devnet" target="_blank" rel="noopener noreferrer" title="LVGzKA4TxJ2EjSYok8saCn8HFa5YVtX6VBPfMMLHefqvDFgjcL9nWB24vsbLmqaSLE4LZ1P6s3erkW99wpTGFFB">LVGzKA4TxJ2E…</a></td></tr>
+<tr><td>Mock swap deployed (114,280 bytes)</td><td><a class="sig" href="https://explorer.solana.com/tx/263FHbihhzQcYjxU1gq5Wg3RC3z8w6HjRwZgumUw6vpZ1DjC42SkYyu3yCTY9ynS5T3UJj5CEGt12AnqDcpKfoLQ?cluster=devnet" target="_blank" rel="noopener noreferrer" title="263FHbihhzQcYjxU1gq5Wg3RC3z8w6HjRwZgumUw6vpZ1DjC42SkYyu3yCTY9ynS5T3UJj5CEGt12AnqDcpKfoLQ">263FHbihhzQc…</a></td></tr>
+<tr><td>Verifex upgraded in place to add <code>verify_outcome_and_issue</code> (106,136 bytes, sha256 <code>1ce32cc8ee76e5b0cf2bb78041840749441d9418af30ac57dedf2a8843ab7992</code>)</td><td><a class="sig" href="https://explorer.solana.com/tx/3JZTS9pmnKmmd9DdjgVcL86sg5hFkiAhYznStdCQ6mHykdsUrbpAoTzmAFvS26vAwspmUdjNxVqWM6c5fQiRdUy8?cluster=devnet" target="_blank" rel="noopener noreferrer" title="3JZTS9pmnKmmd9DdjgVcL86sg5hFkiAhYznStdCQ6mHykdsUrbpAoTzmAFvS26vAwspmUdjNxVqWM6c5fQiRdUy8">3JZTS9pmnKmm…</a></td></tr>
+<tr><td>Commitment created on TrustRail Core: 1,000,000 in, 500,000 minimum out, executor <code>EkA7LiSKxc9pqxkByWR7BrPAZjmqto7naJK8C3oTBqtw</code></td><td><a class="sig" href="https://explorer.solana.com/tx/5bHp6V9WNg1sUCCRAtWzWU8EbbDL3W4GWNJiswnGEQf9Vo58MRrYByX4Gjq6kJgbNf75XzaxaPu1wB327fH92YoY?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5bHp6V9WNg1sUCCRAtWzWU8EbbDL3W4GWNJiswnGEQf9Vo58MRrYByX4Gjq6kJgbNf75XzaxaPu1wB327fH92YoY">5bHp6V9WNg1s…</a></td></tr>
+<tr><td>Mock pool initialised</td><td><a class="sig" href="https://explorer.solana.com/tx/5HjLXJLPBbaiEeizSdRoueL4PPjmwBWrwYyzbjTWxE4gWzBJiAVf1yr3XauyqePi8xtkVVsEjebwkWkqQZ4GdZf3?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5HjLXJLPBbaiEeizSdRoueL4PPjmwBWrwYyzbjTWxE4gWzBJiAVf1yr3XauyqePi8xtkVVsEjebwkWkqQZ4GdZf3">5HjLXJLPBbai…</a></td></tr>
+<tr><td>Escrow moved to the swap staging account</td><td><a class="sig" href="https://explorer.solana.com/tx/3TQdpXREkpAuo11VXBEBsSJuyv5jm6S7Ve8PoVRF2g9vpFuuzr95ptmmaJey3wP2NQtqYC3WQ9zTYD762Go3qCuN?cluster=devnet" target="_blank" rel="noopener noreferrer" title="3TQdpXREkpAuo11VXBEBsSJuyv5jm6S7Ve8PoVRF2g9vpFuuzr95ptmmaJey3wP2NQtqYC3WQ9zTYD762Go3qCuN">3TQdpXREkpAu…</a></td></tr>
+<tr><td>Mock swap executed (1:1 stand-in)</td><td><a class="sig" href="https://explorer.solana.com/tx/67WL4EHDupJoSRfoFUhPbGjk2ZPRgED2SiukqG6qfhxDmg25sJSsG4myfNPXZaAg1ZgX2xnVibtQystb2NfCVJcX?cluster=devnet" target="_blank" rel="noopener noreferrer" title="67WL4EHDupJoSRfoFUhPbGjk2ZPRgED2SiukqG6qfhxDmg25sJSsG4myfNPXZaAg1ZgX2xnVibtQystb2NfCVJcX">67WL4EHDupJo…</a></td></tr>
+<tr><td>Executor submits the proof: commitment <code>Passed</code></td><td><a class="sig" href="https://explorer.solana.com/tx/3vFdVvmomA7sjzeDtCwgAapN8i28VSLjN7A4iCgeCAgN1aDugqppzsqgX3vWfhR36L2DQJQK4bFtiiV8XtjDZHY3?cluster=devnet" target="_blank" rel="noopener noreferrer" title="3vFdVvmomA7sjzeDtCwgAapN8i28VSLjN7A4iCgeCAgN1aDugqppzsqgX3vWfhR36L2DQJQK4bFtiiV8XtjDZHY3">3vFdVvmomA7s…</a></td></tr>
+<tr><td>Verifex Core refuses a credential for another subject, <code>SubjectNotExecutor</code> (6005)</td><td><a class="sig" href="https://explorer.solana.com/tx/2np47g3b2mqM9NbC5husjeujypNyWNw9FZpzRQGCvdFZeqRo9wwe2Y9iwmk8zZLWhkSEVkkbu37fhKmauUx4s38D?cluster=devnet" target="_blank" rel="noopener noreferrer" title="2np47g3b2mqM9NbC5husjeujypNyWNw9FZpzRQGCvdFZeqRo9wwe2Y9iwmk8zZLWhkSEVkkbu37fhKmauUx4s38D">2np47g3b2mqM…</a></td></tr>
+<tr><td>Verifex Core issues the executor&#x27;s credential</td><td><a class="sig" href="https://explorer.solana.com/tx/5axvsbgGs37dCfbc6zdyJAWGnM1PnH7tGGSyVDixuzgd4sWF8g8dfDd5m7kffztxRtATC8dPKVSd3QcPLFwcRsnY?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5axvsbgGs37dCfbc6zdyJAWGnM1PnH7tGGSyVDixuzgd4sWF8g8dfDd5m7kffztxRtATC8dPKVSd3QcPLFwcRsnY">5axvsbgGs37d…</a></td></tr>
+<tr><td>DvP trade 4001 between the executor and D: create</td><td><a class="sig" href="https://explorer.solana.com/tx/5TCpA3o7V8DyeoRhAcPiZWg4k1YYg6v45jNwsRE4M1v6PvZLspB8cSZvaqJFTikUacJRxGqKfKMnaJw5PcUnofv9?cluster=devnet" target="_blank" rel="noopener noreferrer" title="5TCpA3o7V8DyeoRhAcPiZWg4k1YYg6v45jNwsRE4M1v6PvZLspB8cSZvaqJFTikUacJRxGqKfKMnaJw5PcUnofv9">5TCpA3o7V8Dy…</a></td></tr>
+<tr><td>Trade 4001: fund</td><td><a class="sig" href="https://explorer.solana.com/tx/2sMbrJoRaQSB9yR9abRtTprgquAXfNjKPcQPw49wdxYCSD2Z5TUTzSWypDsAQg8X9XwfDwit68TUjfCnHP4qtCEm?cluster=devnet" target="_blank" rel="noopener noreferrer" title="2sMbrJoRaQSB9yR9abRtTprgquAXfNjKPcQPw49wdxYCSD2Z5TUTzSWypDsAQg8X9XwfDwit68TUjfCnHP4qtCEm">2sMbrJoRaQSB…</a></td></tr>
+<tr><td>Trade 4001: register</td><td><a class="sig" href="https://explorer.solana.com/tx/2YvHeySD5Upnpgavan4GvxB2yqfMfvP9L2odN8NSGRaPxwtGsfrEtq7A2nh7ymoB21eqHpShHREqnGk1UD8VPJoh?cluster=devnet" target="_blank" rel="noopener noreferrer" title="2YvHeySD5Upnpgavan4GvxB2yqfMfvP9L2odN8NSGRaPxwtGsfrEtq7A2nh7ymoB21eqHpShHREqnGk1UD8VPJoh">2YvHeySD5Upn…</a></td></tr>
+<tr><td>Settle with the Verifex Core credential and D&#x27;s credential, rent returned (trade 4001)</td><td><a class="sig" href="https://explorer.solana.com/tx/3cLGQQMQdVMFhpUxweLUqRzsqb2oyH9pHhffVciV8Kd9n2yz2KaZyPr5ZeUmhNunAs7gTbeK4TDj3SWx1DpCtiFG?cluster=devnet" target="_blank" rel="noopener noreferrer" title="3cLGQQMQdVMFhpUxweLUqRzsqb2oyH9pHhffVciV8Kd9n2yz2KaZyPr5ZeUmhNunAs7gTbeK4TDj3SWx1DpCtiFG">3cLGQQMQdVMF…</a></td></tr>
+  </table></div>
+
+  <h2>TrustRail Core</h2>
+  <div class="card te">
+    <img src="assets/te.svg" alt="TrustRail Core mark">
+    <div>
+      <h3>TrustRail Core: barebones, devnet only <span class="tag">devnet only</span></h3>
+      <p>TrustRail Core is a devnet-only fork of my separate TrustRail project. I made it for the Referee capstone so that Verifex has a real outcome to check. It is barebones: the swap behind it is a 1:1 stand-in, and its pass check compares an output balance with a minimum, so a plain donation could satisfy it. Treat it as proof the wiring works, not as a security guarantee. The program (<code>58t4gi88MNSURkwN6GuGugmXWPFqAT6s9pB56Srx4Bez</code>) is upgradeable by my wallet. TrustRail itself is unchanged.</p>
+      <p><a href="https://github.com/Portaudit/referee/tree/main/trustrail_core" target="_blank" rel="noopener noreferrer">The patch, in the Referee repo</a></p>
+    </div>
+  </div>
+
+  <h2>Limits</h2>
+  <ul>
+    <li>This is a demonstration of the path from check to credential to settlement. It is not a security guarantee, and it is not KYC.</li>
+    <li>Devnet only. Unaudited.</li>
+    <li>Both Verifex and Referee are upgradeable by my wallet, which is a trust assumption.</li>
+    <li>The first check shows only that a program can no longer be upgraded. It says nothing about what the program does.</li>
+    <li>The second check trusts TrustRail Core's <code>Passed</code> status, which is a weak gate.</li>
+  </ul>
+  <h2>Plans</h2>
+  <p>Stronger proofs of what an agent actually ran. Plans only, no dates promised.</p>
+
+  <footer>
+    Ishvir Jackpersad &middot; <a href="mailto:ish@ishvir.xyz">ish@ishvir.xyz</a><br>
+    <a href="https://thereferee.xyz" target="_blank" rel="noopener noreferrer">thereferee.xyz</a> &middot;
+    <a href="https://github.com/Portaudit/referee" target="_blank" rel="noopener noreferrer">github.com/Portaudit/referee</a> &middot;
+    <a href="https://ishvir.xyz">ishvir.xyz</a>
+  </footer>
+</main>
+</body>
+</html>
