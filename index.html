@@ -142,6 +142,11 @@ header h1{margin:0!important}
   <h2>Plans</h2>
   <p>Stronger proofs of what an agent actually ran. Plans only, no dates promised.</p>
 
+  <h2>Security checks</h2>
+  <div class="card">
+    <h3>Checked 17 October 2026</h3>
+    <p>Verifex's program source lives in the Referee repository. I scanned the full git history of that repository and of this site with my own key scanner and found no valid Solana keypair, private-key block or common token pattern. GitHub secret scanning also shows no alerts on either repository. Gitleaks, an independent scanner, was also run on both: it reported no leaks in verifex-live and matched only a public address in the Referee repository, as detailed in the full statement. The 14 addresses that signed the Referee receipts, including the admin, keeper and executor wallets, each hold 0 SOL on mainnet. The programs are upgradeable by my wallet, devnet only and unaudited. This is a point-in-time check, not proof that nothing sensitive exists. <a href="https://ishvir.xyz/security/" target="_blank" rel="noopener noreferrer">Full statement and limits</a>.</p>
+  </div>
   <footer>
     Ishvir Jackpersad &middot; <a href="mailto:ish@ishvir.xyz">ish@ishvir.xyz</a><br>
     <a href="https://github.com/Portaudit/referee/graphs/contributors?from=7%2F11%2F2026" target="_blank" rel="noopener noreferrer">Contributor stats</a> &middot;
